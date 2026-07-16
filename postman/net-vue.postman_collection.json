@@ -1,0 +1,554 @@
+{
+	"info": {
+		"name": "Product API — ASP.NET Core",
+		"description": "Product Management API (ASP.NET Core + Vue). Same domain and endpoints as the quarkus-react and spring-webflux-angular siblings.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "token",
+			"value": ""
+		},
+		{
+			"key": "productId",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Login (admin)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const body = pm.response.json();",
+							"pm.collectionVariables.set('token', body.token);"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"username\":\"admin\",\"password\":\"admin123\"}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"auth",
+						"login"
+					]
+				}
+			}
+		},
+		{
+			"name": "Create Product — 201 Created",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const body = pm.response.json();",
+							"pm.collectionVariables.set('productId', body.id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"sku\":\"SKU-001\",\"name\":\"Wireless Mouse\",\"description\":\"Ergonomic wireless mouse\",\"category\":\"Electronics\",\"price\":29.99,\"stock\":150,\"active\":true}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products"
+					]
+				}
+			}
+		},
+		{
+			"name": "Create Product — 409 Duplicate SKU",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"sku\":\"SKU-001\",\"name\":\"Wireless Mouse\",\"description\":null,\"category\":null,\"price\":29.99,\"stock\":150,\"active\":true}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products"
+					]
+				}
+			}
+		},
+		{
+			"name": "Create Product — 400 Validation",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"sku\":\"\",\"name\":\"\"}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products"
+					]
+				}
+			}
+		},
+		{
+			"name": "List Active Products — 200 OK (paginated)",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/active?page=0&size=20",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"active"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "20"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "List Inactive Products — 200 OK (paginated)",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/inactive?page=0&size=20",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"inactive"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "20"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Search by Name Prefix — 200 OK",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/search?prefix=Wireless",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "prefix",
+							"value": "Wireless"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Find by SKU — 200 OK",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/sku/SKU-001",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"sku",
+						"SKU-001"
+					]
+				}
+			}
+		},
+		{
+			"name": "Find by SKU — 404 Not Found",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/sku/does-not-exist",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"sku",
+						"does-not-exist"
+					]
+				}
+			}
+		},
+		{
+			"name": "Find by ID — 200 OK",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"{{productId}}"
+					]
+				}
+			}
+		},
+		{
+			"name": "Find by ID — 404 Not Found",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/999999",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"999999"
+					]
+				}
+			}
+		},
+		{
+			"name": "Update Product — 200 OK",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"sku\":\"SKU-001\",\"name\":\"Wireless Mouse v2\",\"description\":\"Updated\",\"category\":\"Electronics\",\"price\":24.99,\"stock\":200,\"active\":true}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"{{productId}}"
+					]
+				}
+			}
+		},
+		{
+			"name": "Update Product — 404 Not Found",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"sku\":\"SKU-999\",\"name\":\"Ghost\",\"description\":null,\"category\":null,\"price\":1,\"stock\":1,\"active\":true}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/999999",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"999999"
+					]
+				}
+			}
+		},
+		{
+			"name": "Delete Product — 204 No Content",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"{{productId}}"
+					]
+				}
+			}
+		},
+		{
+			"name": "Delete Product — 404 Not Found",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/999999",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"999999"
+					]
+				}
+			}
+		},
+		{
+			"name": "Import Products (CSV) — 200 OK",
+			"request": {
+				"method": "POST",
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/import",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"import"
+					]
+				},
+				"description": "Multipart CSV upload (field name `file`), header row `sku,name,description,category,price,stock,active`. Requires ADMIN role. Response: {imported, failed, errors[]} — malformed rows are skipped and reported, not fatal."
+			}
+		},
+		{
+			"name": "Products Report — PDF",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/report/pdf",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"report",
+						"pdf"
+					]
+				}
+			}
+		},
+		{
+			"name": "Products Report — Excel",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/products/report/excel",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"products",
+						"report",
+						"excel"
+					]
+				}
+			}
+		},
+		{
+			"name": "Health (Full) — 200 OK",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health"
+					]
+				}
+			}
+		},
+		{
+			"name": "Health (Liveness) — 200 OK",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/health/live",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health",
+						"live"
+					]
+				}
+			}
+		},
+		{
+			"name": "Health (Readiness) — 200 OK",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/health/ready",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health",
+						"ready"
+					]
+				}
+			}
+		},
+		{
+			"name": "Metrics (Prometheus) — 200 OK",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/metrics",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"metrics"
+					]
+				}
+			}
+		}
+	]
+}
