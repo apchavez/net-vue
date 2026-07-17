@@ -222,7 +222,6 @@ jobs:
   docker-api:
     name: Docker — API
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     needs: test-api
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -293,7 +292,6 @@ jobs:
   docker-web:
     name: Docker — Web
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     needs: test-web
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
