@@ -1,0 +1,26 @@
+# .NET
+api/**/bin/
+api/**/obj/
+api/**/TestResults/
+
+# Node / Vue
+web/node_modules/
+web/dist/
+web/playwright-report/
+web/test-results/
+web/.env
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+
+# IDE
+.vs/
+.vscode/
+*.user
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,67 @@
+nameOverride: ""
+
+api:
+  image:
+    repository: ghcr.io/apchavez/net-vue-api
+    tag: ""
+    pullPolicy: Always
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+web:
+  image:
+    repository: ghcr.io/apchavez/net-vue-web
+    tag: ""
+    pullPolicy: Always
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+config:
+  aspnetEnvironment: Production
+  db:
+    host: postgres-service
+    port: "5432"
+    name: productdb
+  redis:
+    host: redis-service
+    port: "6379"
+  kafka:
+    bootstrapServers: kafka:9092
+  otel:
+    endpoint: http://otel-collector:4318/v1/traces
+
+secrets:
+  dbUser: ""
+  dbPassword: ""
+  kafkaUser: product-api
+  kafkaPassword: ""
+  redisPassword: ""
+  # PEM-encoded RSA private key shared by every replica for JWT signing/verification.
+  # If empty, each pod generates its own ephemeral key at startup — fine for a single
+  # replica, breaks token verification across multiple replicas. Generate once with
+  # `openssl genrsa 2048` and pass via `--set-file secrets.jwtPrivateKeyPem=privateKey.pem`.
+  jwtPrivateKeyPem: ""
+
+ingress:
+  host: product-api.local
+
+hpa:
+  minReplicas: 2
+  maxReplicas: 10
+  cpuUtilization: 70
+  memoryUtilization: 80
+
+monitoring:
+  enabled: true
