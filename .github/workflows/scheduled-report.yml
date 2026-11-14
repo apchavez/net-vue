@@ -1,0 +1,98 @@
+name: Scheduled Product Report
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # every Monday, 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for the API to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health/ready > /dev/null; then
+              echo "API ready after ${i}0s."
+              exit 0
+            fi
+            echo "Waiting for API readiness... (${i}/30)"
+            sleep 10
+          done
+          echo "::error::API never became ready."
+          docker compose logs
+          exit 1
+
+      - name: Log in as demo admin
+        id: login
+        run: |
+          TOKEN=$(curl -sf -X POST http://localhost:8080/api/v1/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"username":"admin","password":"admin123"}' | jq -r '.token')
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::Login failed, no token returned."
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Seed sample products
+        run: |
+          cat > /tmp/products.csv <<'EOF'
+          sku,name,description,category,price,stock,active
+          SKU-1001,Teclado mecánico,Teclado mecánico RGB,Periféricos,89.90,40,true
+          SKU-1002,Mouse inalámbrico,Mouse ergonómico 2.4GHz,Periféricos,29.90,120,true
+          SKU-1003,Monitor 27",Monitor IPS 27 pulgadas 144Hz,Monitores,349.00,15,true
+          SKU-1004,Webcam HD,Webcam 1080p con micrófono,Periféricos,45.50,60,true
+          SKU-1005,Silla ergonómica,Silla de oficina ajustable,Mobiliario,210.00,8,true
+          SKU-1006,Hub USB-C,Hub USB-C 7 en 1,Accesorios,32.00,75,true
+          SKU-1007,Lámpara de escritorio,Lámpara LED regulable,Mobiliario,24.90,50,true
+          SKU-1008,Auriculares Bluetooth,Auriculares over-ear con ANC,Audio,120.00,25,false
+          EOF
+          curl -sf -X POST http://localhost:8080/api/v1/products/import \
+            -H "Authorization: Bearer ${{ steps.login.outputs.token }}" \
+            -F "file=@/tmp/products.csv"
+
+      - name: Fetch PDF report
+        run: |
+          curl -sf http://localhost:8080/api/v1/products/report/pdf \
+            -H "Authorization: Bearer ${{ steps.login.outputs.token }}" \
+            -o products-report.pdf
+
+      - name: Fetch Excel report
+        run: |
+          curl -sf http://localhost:8080/api/v1/products/report/excel \
+            -H "Authorization: Bearer ${{ steps.login.outputs.token }}" \
+            -o products-report.xlsx
+
+      - name: Upload reports as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: product-reports-${{ github.run_id }}
+          path: |
+            products-report.pdf
+            products-report.xlsx
+          retention-days: 30
+
+      - name: Email reports (optional)
+        if: ${{ vars.REPORT_EMAIL != '' && vars.SMTP_SERVER != '' }}
+        uses: dawidd6/action-send-mail@v18
+        with:
+          server_address: ${{ vars.SMTP_SERVER }}
+          server_port: ${{ vars.SMTP_PORT || 587 }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Reporte semanal de productos — net-vue"
+          to: ${{ vars.REPORT_EMAIL }}
+          from: net-vue Scheduled Report
+          body: "Reporte semanal generado automáticamente. Ver adjuntos (PDF y Excel)."
+          attachments: products-report.pdf,products-report.xlsx
+
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down -v

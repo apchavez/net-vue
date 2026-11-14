@@ -1,0 +1,64 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to ephemeral kind cluster
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: net-vue-ci
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install product-api ./chart \
+            --namespace product-api \
+            --create-namespace \
+            --set api.image.tag=latest \
+            --set web.image.tag=latest \
+            --set monitoring.enabled=false \
+            --set secrets.dbUser=ci_user \
+            --set secrets.dbPassword=ci_password \
+            --set secrets.kafkaUser=ci_kafka_user \
+            --set secrets.kafkaPassword=ci_kafka_password \
+            --set secrets.redisPassword=ci_redis_password \
+            --wait --timeout=5m
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/product-api -n product-api --timeout=180s
+          kubectl rollout status deployment/product-web -n product-api --timeout=180s
+
+      - name: Smoke test — API health
+        run: |
+          kubectl run smoke-test-api --rm -i --restart=Never --image=curlimages/curl:8.11.1 -n product-api -- \
+            sh -c "curl -sf http://product-api/health/ready && echo API_OK"
+
+      - name: Smoke test — Web frontend
+        run: |
+          kubectl run smoke-test-web --rm -i --restart=Never --image=curlimages/curl:8.11.1 -n product-api -- \
+            sh -c "curl -sf http://product-web/ && echo WEB_OK"
+
+      - name: Show cluster state on failure
+        if: failure()
+        run: |
+          kubectl get pods -n product-api -o wide
+          kubectl describe pods -n product-api
+          kubectl logs -n product-api -l app.kubernetes.io/name=product-api --tail=200 || true
+
+      - name: Delete kind cluster
+        if: always()
+        run: kind delete cluster --name net-vue-ci

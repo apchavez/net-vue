@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: product-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "product-api.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "product-api.selectorLabels" . | nindent 6 }}
